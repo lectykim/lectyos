@@ -8,6 +8,13 @@ SYS_SIZE = 0x3000
 ! 작동시킬 거에요
 
 
+.text
+begtext:
+.data
+begdata:
+.bss
+begbss:
+.text
 
 SETUPLEN = 4 ! 셋업 섹터는 4개에요!
 BOOTSEG = 0x07c0 ! 부트 섹터는 여기에 로드 돼요
@@ -79,6 +86,52 @@ ok_load_setup:
     mov bp,#msg1
     mov ax,#0x1301 ! 스트링을 입력하고 커서를 옮겨요
     int 0x10
+! 메세지 입력 성공
+! 시스템 로딩 시작하기
+    mov ax,#SYSSEG
+    mov es,ax ! segment of 0x010000
+    call read_it
+    call kill_motor
+
+! root-device 찾기
+    seg cs
+    mov ax, root_dev
+    cmp ax,#0
+    jne root_defined
+    seg cs
+    mov bx,sectors
+    mov ax, #0x0208 ! /dev/at1
+    cmp bx,#15
+    je root_defined
+    mov ax,#0x021c ! /dev/ps0
+    mov ax,#0x021c
+    cmp bx,#18
+    je root_defined
+undef_root:
+    jmp undef_root
+root_defined:
+    seg cs
+    mov root_dev,ax
+
+    jmpi 0,SETUPSEG
+sread: .word 1+SETUPLEN ! current secotrs
+head: .word 0 ! current head
+track: .word 0 ! current track
+
+read_it:
+    mov ax,es
+    test ax,#0x0FFF ! es must be at 64kB boundary
+die: jne die
+    xor bx,bx ! bx is starting address within segment
+
+!플로피꺼주기
+kill_motor:
+    push dx
+    mov dx,#0x3f2
+    mov al,#0
+    outb
+    pop dx
+    ret
 
 sectors:
     .word 0
@@ -86,6 +139,15 @@ msg1:
     .byte 13,10
     .ascii "LectyOS Mesage Test ..."
     .byte 13, 10, 13, 10
-.org 510
+.org 508
+root_dev:
+    .word ROOT_DEV
 boot_flag:
     .word 0xAA55
+
+.text
+endtext:
+.data
+enddata:
+.bss
+endbss:
