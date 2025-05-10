@@ -8,18 +8,9 @@
 ! 부트 블록이 사용되는 장소는 보호 모드로 보호됩니다.
 
 ! 이 변수는 bootsect.s랑 같아야 좋아요.
-
 INITSEG = 0x9000
 SYSSEG = 0x1000
 SETUPSEG = 0x9020
-
-.text
-begtext:
-.data
-begdata:
-.bss
-begbss:
-.text
 
 entry start
 start:
@@ -93,7 +84,7 @@ is_disk1:
     cli ! 인터럽트를 비활성화하고, OS가 지정하는 인터럽트 루틴을 사용하겠다고 컴퓨터에 선언하기
 ! 먼저 시스템을 올바른 곳으로 이동.
     mov ax,#0x0000
-    cli
+    cld
 do_move:
     mov es,ax !목적지 세그먼트
     add ax,#0x1000
@@ -171,7 +162,7 @@ gdt:
     .word 0x9A00 ! code /읽기/실행
     .word 0x00C0 ! 세분성=4096??
 
-    .word 0x7FF
+    .word 0x07FF
     .word 0x0000
     .word 0x9200 ! data /읽기/쓰기
     .word 0x00C0
@@ -183,9 +174,3 @@ gdt_48:
     .word 0x800 !gdt limit 2048, 256 gdt entries
     .word 512+gdt,0x9 ! gdt base = 0x9xxx
 
-.text
-endtext:
-.data
-enddata:
-.bss
-endbss:

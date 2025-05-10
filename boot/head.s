@@ -4,24 +4,25 @@
 * 
 */
 .text
+.globl _idt,_gdt,_pg_dir,_tmp_floppy_area
 _pg_dir:
 startup_32:
     movl $0x10,%eax
     mov %ax,%ds
     mov %ax,%es
     mov %ax,%fs
-    mov %ax %gs
-    lss _stack_start,%esp
+    mov %ax, %gs
+    lss stack_start,%esp
     call setup_idt
     call setup_gdt
     movl $0x10,%eax #reload all the segment registers
     mov %ax,%ds
     mov %ax,%es
     mov %ax,%fs
-    mov %ax %gs
-    lss _stack_start,%esp
+    mov %ax, %gs
+    lss stack_start,%esp
     xorl %eax,%eax
-    incl %eax
+1:  incl %eax
     movl %eax,0x000000
     cmpl %eax,0x100000
     je 1b
@@ -30,6 +31,7 @@ startup_32:
 * verify_area()라는 함수를 불러야 한다.
 * 486 유저는 int 16 math error를 내지 않기 위해 NE (#5) bit를 세팅해야한다.
 */
+check_x87:
     movl %cr0,%eax
     andl $0x80000011, %eax
     orl $2,%eax
@@ -45,7 +47,7 @@ startup_32:
     xorl $6,%eax
     movl %eax,%cr0
     ret
-.align 2
+.align 4
 1: .byte 0xDB, 0xE4
     ret
 
@@ -92,14 +94,14 @@ after_page_tables:
     pushl $0
     pushl $0
     pushl $L6
-    pushl $_main
+    pushl $main
     jmp setup_paging
 L6:
     jmp L6
 
 int_msg:
     .asciz "Unknown interrupt \n\r"
-.align 2
+.align 4
 ignore_int:
     pushl %eax
     pushl %ecx
@@ -112,7 +114,6 @@ ignore_int:
     mov %ax,%es
     mov %ax,%fs
     pushl $int_msg
-    call _printk
     popl %eax
     pop %fs
     pop %es
@@ -122,7 +123,7 @@ ignore_int:
     popl %eax
     iret
 
-.align 2
+.align 4
 setup_paging:
     movl $1024*5,%ecx
     xorl %eax,%eax
@@ -145,23 +146,22 @@ setup_paging:
     movl %eax,%cr0
     ret
 
-.align 2
+.align 4
 .word 0
 idt_descr:
     .word 256*8-1
     .long _idt
-.align 2
+.align 4
 .word 0
 gdt_descr:
     .word 256*8-1
     .long _gdt
 
-    .align 3
-_idt: fill 256,8,0
+.align 8
+_idt: .fill 256,8,0
 
 _gdt: .quad 0x0000000000000000
       .quad 0x00c09a0000000fff
       .quad 0x00c0920000000fff
       .quad 0x0000000000000000
       .fill 252,8,0
-    

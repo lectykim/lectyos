@@ -1,31 +1,22 @@
 ! LECTYOS SYSSIZE는 아직 계산하지 않았어요 >_<
 ! 일단 리눅스 0.11처럼 0x3000 click = 0x30000 = 196kB로 해둘게요
-SYS_SIZE = 0x3000
+SYSSIZE = 0x3000
 ! 일단 BIOS의 관례 상, 0x7c00으로 로딩될 거에요
 ! 그러나 0x90000으로 복사하고 점프할게요
 !
 ! 그리고 setup을 0x90200으로 설정하고, bios interrupts를 이용하여 시스템을 
 ! 작동시킬 거에요
 
-
-.text
-begtext:
-.data
-begdata:
-.bss
-begbss:
-.text
-
 SETUPLEN = 4 ! 셋업 섹터는 4개에요!
 BOOTSEG = 0x07c0 ! 부트 섹터는 여기에 로드 돼요
 INITSEG = 0x9000 ! 부트 섹터를 여기로 옮겨요
 SETUPSEG = 0x9020 ! SETUP은 여기서 시작돼요
 SYSSEG = 0x1000 ! 시스템은 0x10000 (65336)에 로드돼요!
-ENDSEG = SYSSEG + SYS_SIZE ! 0X10000 + SYSSIZE만큼만 로드하고 로딩 멈춰요
+ENDSEG = SYSSEG + SYSSIZE ! 0X10000 + SYSSIZE만큼만 로드하고 로딩 멈춰요
 
 ! ROOT_DEV: 0x000 - 미정의하면 플루피 디스크 타입과 같아진다구요?
 ! 0x301 - 첫 번째 드라이브의 첫 번째 파티션을 의미해요
-ROOT_DEV = 0x301 
+ROOT_DEV = 0x301
 
 entry start
 start:
@@ -104,7 +95,6 @@ ok_load_setup:
     cmp bx,#15
     je root_defined
     mov ax,#0x021c ! /dev/ps0
-    mov ax,#0x021c
     cmp bx,#18
     je root_defined
 undef_root:
@@ -123,6 +113,78 @@ read_it:
     test ax,#0x0FFF ! es must be at 64kB boundary
 die: jne die
     xor bx,bx ! bx is starting address within segment
+
+rp_read:
+    mov ax,es
+    cmp ax,#ENDSEG
+    jb ok1_read
+    ret
+ok1_read:
+    seg cs
+    mov ax,sectors
+    sub ax,sread
+    mov cx,ax
+    shl cx,#9
+    add cx,bx
+    jnc ok2_read
+    je ok2_read
+    xor ax,ax
+    sub ax,bx
+    shr ax,#9
+ok2_read:
+    call read_track
+    mov cx,ax
+    add ax,sread
+    seg cs
+    cmp ax,sectors
+    jne ok3_read
+    mov ax,#1
+    sub ax,head
+    jne ok4_read
+    inc track
+ok4_read:
+    mov head,ax
+    xor ax,ax
+ok3_read:
+    mov sread,ax
+    shl cx,#9
+    add bx,cx
+    jnc rp_read
+    mov ax,es
+    add ax,#0x1000
+    mov es,ax
+    xor bx,bx
+    jmp rp_read
+
+read_track:
+    push ax
+    push bx
+    push cx
+    push dx
+    mov dx,track
+    mov cx,sread
+    inc cx
+    mov ch,dl
+    mov dx,head
+    mov dh,dl
+    mov dl,#0
+    and dx,#0x0100
+    mov ah,#2
+    int 0x13
+    jc bad_rt
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+bad_rt:     mov ax,#0
+    mov dx,#0
+    int 0x13
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    jmp read_track
 
 !플로피꺼주기
 kill_motor:
@@ -145,9 +207,3 @@ root_dev:
 boot_flag:
     .word 0xAA55
 
-.text
-endtext:
-.data
-enddata:
-.bss
-endbss:
