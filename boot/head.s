@@ -31,7 +31,7 @@ startup_32:
 * verify_area()라는 함수를 불러야 한다.
 * 486 유저는 int 16 math error를 내지 않기 위해 NE (#5) bit를 세팅해야한다.
 */
-check_x87:
+
     movl %cr0,%eax
     andl $0x80000011, %eax
     orl $2,%eax
@@ -39,6 +39,7 @@ check_x87:
     jmp after_page_tables
 
 /* 287/387을 위한 ET 비트 체크 */
+check_x87:
     fninit
     fstsw %ax
     cmpb $0,%al
@@ -47,18 +48,18 @@ check_x87:
     xorl $6,%eax
     movl %eax,%cr0
     ret
-.align 4
+.p2align 2
 1: .byte 0xDB, 0xE4
     ret
 
 setup_idt:
     lea ignore_int, %edx
-    movl $0x0080000, %eax
+    movl $0x00080000, %eax
     movw %dx,%ax
     movw $0x8E00,%dx
 
     lea _idt,%edi
-    mov $245,%ecx
+    mov $256,%ecx
 rp_sidt:
     movl %eax, (%edi)
     movl %edx,4(%edi)
@@ -101,7 +102,7 @@ L6:
 
 int_msg:
     .asciz "Unknown interrupt \n\r"
-.align 4
+.p2align 2
 ignore_int:
     pushl %eax
     pushl %ecx
@@ -123,7 +124,7 @@ ignore_int:
     popl %eax
     iret
 
-.align 4
+.p2align 2
 setup_paging:
     movl $1024*5,%ecx
     xorl %eax,%eax
@@ -146,18 +147,18 @@ setup_paging:
     movl %eax,%cr0
     ret
 
-.align 4
+.p2align 2
 .word 0
 idt_descr:
     .word 256*8-1
     .long _idt
-.align 4
+.p2align 2
 .word 0
 gdt_descr:
     .word 256*8-1
     .long _gdt
 
-.align 8
+.p2align 3
 _idt: .fill 256,8,0
 
 _gdt: .quad 0x0000000000000000
