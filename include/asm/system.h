@@ -1,3 +1,10 @@
+/*
+line 1: dx의 16비트(인터럽트 시 실행할 함수 포인터 32비트 중 16비트)를 ax에 이동
+line 2: edx의 하위 16비트에 0x8000+dpl<<13+type<<8 삽입
+line 3: eax를 gate_addr에 쓰기
+line 4: edx를 gate_addr+4byte에 쓰기
+*/
+
 #define _set_gate(gate_addr,type,dpl,addr) \
 __asm__ ("movw %%dx, %%ax \n\t" \
         "movw %0 %%dx \n\t" \
@@ -11,10 +18,10 @@ __asm__ ("movw %%dx, %%ax \n\t" \
 
 #define set_intr_gate(n,addr) \
     _set_gate(&idt[n],14,0,addr)
-
+//커널 레벨 인터럽트
 #define set_trap_gate(n,addr) \
     _set_gate(&idt[n],15,0,addr)
-
+//유저 레벨 인터럽트
 #define set_system_gate(n,addr) \
     _set_gate(&idt[n],15,3,addr)
 

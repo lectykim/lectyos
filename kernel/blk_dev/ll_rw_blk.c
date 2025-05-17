@@ -12,7 +12,7 @@ struct blk_dev_struct blk_dev[NR_BLK_DEV] = {
     {NULL,NULL}
 }
 /*
- * 
+ * 블럭 디바이스(hdd,floppy) 등을 연결하는 리퀘스트 객체를 초기화한다.
  * */
 void blk_dev_init(void)
 {

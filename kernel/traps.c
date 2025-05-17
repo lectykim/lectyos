@@ -143,10 +143,27 @@ void trap_init(void)
     set_trap_gate(16,&coprocessor_error);
     for(i=17;i<47;i++)
         set_trap_gate(i,&reserved);
-    set_trap_gate(45,&irq13);
-    outb_p(inb_p(0x21),&0xfb,0x21);
-    outb(inb_p(0xA1),&0xdf,0xA1);
-    set_trap_gate(39,&parallel_interrupt);
+    set_trap_gate(45,&irq13); //coprocessor 활성화
+    outb_p(inb_p(0x21),&0xfb,0x21); //IRQ2인터럽트 허용
+    /*
+    마스터 PIC는 I/O Port 0x21에 있고,
+    슬레이브 PIC는 I/O Port 0xA1에 인터럽트 마스크 레지스터를 갖고 있다.
+    IMR의 각 비트가 1이면 그 IRQ라인은 차단되고, 0이면 허용된다.
+    inbp(0x21)으로 먼저 값을 읽어 온 다음에, 
+    해당 값을 &0xfb(1111 1011)으로 비트 2(IRQ2)를 0으로 클리어, IRQ2라인을 허용한다.
+    그리고 outb_p로 다시 써 넣는다.
+    IRQ2가 Slave PIC로 올라가는 cascade 선이기 때문에, IRQ8~15를 쓰려면 이 코드가 먼저 필요하다.
+    */
+    outb(inb_p(0xA1),&0xdf,0xA1); 
+    /*
+    해당 코드는 슬레이브 PIC 쪽 IRQ라인을 허용해준다.
+    0xA1로 슬레이브 IMR을 읽고, &0xDF (1101 1111)으로 비트 5를 0으로 클리어하여, IRQ13을 허용해준다.
+    해당 코드가 필요한 이유는, PIC는 기본 상태에서 모든 IRQ를 차단(masked)한 채로 시작하기 때문이다.
+    우리가 실제로 키보드 혹은 슬레이브 PIC에 연결된 장치 인터럽트를 받고 싶다면, 해당 IRQ비트를 0으로 내려 줘야 CPU의 INT 핸들러로 인터럽트가 올라옴.
+    IRQ13은 x87 수치 연산 코프로세서의 인터럽트를 받기 위해 쓰였다. 외장 수학 코프로세서가 연산 예외를 발생시키면,
+    IRQ13을 통해 CPU로 알렸고, 커널이 처리하는 구조였기 때문에 해당 코드가 꼭 필요하다.
+    */
+    set_trap_gate(39,&parallel_interrupt); //프린터 접속을 위한 병렬 포트의 인터럽트 설정
     
 
 }

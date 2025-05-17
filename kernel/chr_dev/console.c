@@ -1,10 +1,37 @@
+#define ORIG_X (*(unsigned char *)0x90000)
+#define ORIG_Y (*(unsigned char *)0x90001)
+#define ORIG_VIDEO_PAGE (*(unsigned short *)0x90004)
+#define ORIG_VIDEO_MODE ((*(unsigned short *)0x90006)&0xff)
+#define ORIG_VIDEO_COLS (((*(unsigned short *)0x90006)&0xff00)>>8)
+#define ORIG_VIDEO_LINES (25)
+#define ORIG_VIDEO_EGA_AX (*(unsigned short *)0x90008)
+#define ORIG_VIDEO_EGA_BX (*(unsigned short *)0x9000a)
+#define ORIG_VIDEO_EGA_CX (*(unsigned short *)0x9000c)
+
+#define VIDEO_TYPE_MDA 0x10 /*모노크롬 텍스트 디스플레이*/
+#define VIDEO_TYPE_CGA 0x11 /*CGA 디스플레이*/
+#define VIDEO_TYPE_EGAM 0x20 /*EGA VGA를 모노크롬 모드에서 활용*/
+#define VIDEO_TYPE_EGAC 0x21 /*EGA VGA를 컬러 모드에서 활용*/
+
+#define NPAR 16
+
+extern void keyboard_interrupt(void)
+
+static unsigned char video_type; //사용하는 디스플레이의 종류
+static unsigned long video_num_columns; //텍스트 컬럼의 수
+static unsigned long video_size_row; //로우당 몇 바이트인지
+static unsigned long video_num_lines; //텍스트 줄의 수는 몇인지
+static unsigned char video_page; //비디오 페이지를 초기화
+static unsigned long video_mem_start; //Video RAM의 시작부
+static unsigned long video_mem_end; //Video RAM의 끝부분
+
 void con_init(void)
 {
     register unsigned char a;
     char* display_desc = "????";
     char* display_ptr;
 
-    video_nul_columns = ORIG_VIDEO_COLS;
+    video_num_columns = ORIG_VIDEO_COLS;
     video_size_row = video_nulm_columns * 2;
     video_num_lines = ORIG_VIDEO_LINES;
     video_page = ORIG_VIDEO_PAGE;
