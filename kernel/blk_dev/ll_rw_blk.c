@@ -11,7 +11,9 @@ struct blk_dev_struct blk_dev[NR_BLK_DEV] = {
     {NULL,NULL},
     {NULL,NULL}
 }
-
+/*
+ * 
+ * */
 void blk_dev_init(void)
 {
     int i;
