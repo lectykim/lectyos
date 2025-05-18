@@ -4,6 +4,20 @@
 #define NR_TASKS 64
 #define HZ 100
 
+/*
+ * x86 세그먼트 선택자 (selector)은 GDT/LDT 내 디스크립터 인덱스 x 8 값을 가지도록 설계되어 있다.
+ * 즉, cpu n에 해당하는 tss 인덱스는, FIRST_TSS_ENTRY + 2*n이고,
+ * 이 idx를 선택자로 만들기 위해서는 3비트를 밀어야 한다.
+ * 2*n은 1비트를 더 미는 것으로 표현이 가능하므로, 해당 식이 나오게 된다.
+ * */
+#define FIRST_TSS_ENTRY 4
+#define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
+#define _TSS(n) ((((unsigned long) n)<<4)+(FIRST_TSS_ENTRY<<3))
+#define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
+#define ltr(n) __asm__("ltr %%ax::"a" (_TSS(n)))
+#define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
+
+
 extern void trap_init(void);
 struct tss_struct{
     long back_link;

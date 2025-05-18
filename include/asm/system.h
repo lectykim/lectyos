@@ -26,21 +26,20 @@ __asm__ ("movw %%dx, %%ax \n\t" \
     _set_gate(&idt[n],15,3,addr)
 
 #define _set_tssldt_desc(n,addr,type) \
-__asm__ ("movw $104,%1\n\t" \
-         "movw %%ax,%2 \n\t" \
-         "rorl $16, %%eax \n\t" \
-         "movb %%al,%3 \n\t" \
-         "movb $"type",%4 \n\t"\
-         "movb $0x00,%5 \n\t"   \
-         "movb %%ah,%6 \n\t"\
-         
-         "rorl $16,%%eax" \
+__asm__ ("movw $104,%1\n\t" \ //디스크립터의 limit 필드를 104바이트로 설정 <- 104바이트는 tss구조체 크기. 메모리 %1은 디스크립터 바이트. n[0]~n[1]
+         "movw %%ax,%2 \n\t" \ //베이스 주소 (addr)의 하위 16비트를 디스크립터 베이스 필드에 저장. %2는 디스크립터 바이트 n[2]~n[3]
+         "rorl $16, %%eax \n\t" \ //eax <- (addr>>16) 저장
+         "movb %%al,%3 \n\t" \ // addr의 상위 16비트~23비트를 디스크립터 n[4]에 저장
+         "movb $"type",%4 \n\t"\ //디스크립터의 타입 dpl 비트를 n[5]에 기록한다, 여기서 매크로 인자로 0x89는 tss이며, 0x82는 ldt를 의미한다.
+         "movb $0x00,%5 \n\t"\ //n[6]은 0으로 채운다. 
+         "movb %%ah,%6 \n\t"\ //addr>>24 를 n[7]에 저장할 수 있음.
+         "rorl $16,%%eax" \ //eax를 원래대로 복원.
          ::"a"(addr),"m"(*(n)),"m" (*(n+2)),"m" (*(n+4)),\
          "m"(*(n+5)),"m",(*(n+6)),"m"(*(n+7))\
 )
 
-#define set_tss_desc(n,addr) _set_tssldt_desc(((char *)(n)),addr,"0x89")
-#define set_ldt_desc(nmaddr) _set_tssldt_desc(((char*)(n)),addr,"0x82")
+#define set_tss_desc(n,addr) _set_tssldt_desc(((char *)(n)),addr,"0x89") //0x89, P=1, DPL=0, Type=1001b 32bit TSS
+#define set_ldt_desc(n,addr) _set_tssldt_desc(((char*)(n)),addr,"0x82") //0x82= P=1, DPL=0, Type=0010b LDT Descriptor 
 
 #define sti() __asm__ ("sti"::)
 

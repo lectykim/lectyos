@@ -41,13 +41,27 @@ void sched_init(void)
         p->a = p->b = 0;
         p++;
     }
-
-    __asm__("pushflm ; and $0xffffbfff,(%esp) ; popfl");
-    ltr(0);
-    lldt(0);
-    outb_p(0x36,0x43);
-    outb_p(LATCH & 0xff,0x40);
-    outb_p(LATCH >> 8,0x40);
+/*ELAGS에서 NT 비트를 1로 설정하여 문제가 생기지 않도록 함. NT 플래그가 1이면 IRET시 TSS를 사용하지 않기 때문 */
+    __asm__("pushfl ; and $0xffffbfff,(%esp) ; popfl");
+    ltr(0); //tss를 TR 레지스터에 바인딩
+    lldt(0); //ldt를 ldtr레지스터에 바인딩
+    outb_p(0x36,0x43); // binary, mode 3, LSB/MSB, ch0 타이머 설정
+			/*
+			 * 0x43은 PIT(Programable interrupt timer)의 포트를 의미하며,
+			 * 0x36은 
+			 * bits 7-6 00 -> channel 0 선택
+			 * bits 5-4 11 -> Access mode = LSB then MSB (2바이트 순차 전송)
+			 * bits 3-1 011 = operating mode = mode 3 (square wave generator)
+			 * bit 0 = BCD가 아님. binary 사용
+			 * LSB는 16비트 카운터 값의 하위 8비트이며,
+			 * MSB는 16비트 카운터 값의 상위 8비트이다.
+			 * PIT 카운터 레지스터가 16비트 폭이기 때문에 먼저 하위 바이트를, 그 다음에 상위 바이트를 써 주면 된다.
+			 * mode 3은 사각파를 출력한다. timer tick 용도로 쓰기에 적합.
+			 * channel 0은 cpu의 시스템 타이머 인터럽트 IRQ0과 연결되어 운영체제의 시간 관리를 담당한다.
+			 * 따라서, 해당 코드는 LSB->MSB 순으로 채워 넣어 원하는 주파수(HZ)의 사각파 인터럽트를 channel 0에서 발생시키도록 하는 동작이다.
+			 * */
+    outb_p(LATCH & 0xff,0x40); //LSB 설정
+    outb_p(LATCH >> 8,0x40); //MSB 설정
     outb_p(LATCH >> 8,0x40);
     set_intr_gate(0x20,&timer_interrupt);
 
