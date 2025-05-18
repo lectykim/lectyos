@@ -1,3 +1,6 @@
+#include "sched.h"
+#include <asm/io.h>
+#include <asm/system.h>
 #define LATCH (1193180/HZ)
 
 #define FIRST_TSS_ENTRY 4
@@ -16,15 +19,21 @@ static union task_union init_task = {INIT_TASK,};
 
 struct task_struct * task[NR_TASKS] = {&{init_task.task},};
 
+long user_stack [PAGE_SIZE >>2];
+
+struct{
+    long *a;
+    short b;
+} stack_start = {&user_stack[4096>>2],0x10};
 void sched_init(void)
 {
     int i;
     struct desc_struct *p;
     if(sizeof(struct sigcation) != 16)
         panic("Struct sigcation Must be 16 bytes");
-    set_tss_desc(gdt+FIRST_TSS_ENTRY,&(init_task.task.tss));
-    set_ldt_desc(gdt+FIRST_LDT_ENTRY,&(init_task.task.ldt));
-    p = gdt+2+FIRST_TSS_ENTRY;
+    set_tss_desc(gdt+FIRST_TSS_ENTRY,&(init_task.task.tss)); //TSS0 설정하기
+    set_ldt_desc(gdt+FIRST_LDT_ENTRY,&(init_task.task.ldt)); //LDT1 설정하기
+    p = gdt+2+FIRST_TSS_ENTRY; //GDT의 6번째부터 TSS1, LDT1을 0으로 초기화
     for(i=1;i<NR_TASKS;i++){
         task[i] = NULL;
         p->a = p->b = 0;

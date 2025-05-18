@@ -1,3 +1,9 @@
+#ifndef _SCHED_H
+#define _SCHED_H
+
+#define NR_TASKS 64
+#define HZ 100
+
 extern void trap_init(void);
 struct tss_struct{
     long back_link;
