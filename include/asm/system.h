@@ -45,13 +45,13 @@ __asm__ ("movw $104,%1\n\t" \ //디스크립터의 limit 필드를 104바이트�
 
 #define move_to_user_mode()\
 __asm__ ("movl %%esp,%%eax \n\t"\
-    "pushl $0x17 \n\t" \
-    "pushl %%eax \n\t"\
-    "pushfl \n\t"\
-    "pushl $0x0f \n\t" \
-    "pushl $1f \n\t" \
-    "iret \n" \
-    "1:\t movl $0x17,%%eax\n\t"\
+    "pushl $0x17 \n\t" \ //스택에 ss의 값, 0x17(10111)을 넣는다. (권한 레벨 3, LDT, 데이터 세그먼트)
+    "pushl %%eax \n\t"\ //esp 값을 스택에 넣음.
+    "pushfl \n\t"\ //eflags 삽입
+    "pushl $0x0f \n\t" \ //스택에 cs, 0x0f(1111)을 넣는다. (권한 레벨 3,LDT, 코드 세그먼트)
+    "pushl $1f \n\t" \ //eip를 삽입한다.
+    "iret \n" \ //반환, 이 때 권한 레벨 3에서 권한 0으로 변경된다.
+    "1:\t movl $0x17,%%eax\n\t"\ //다음 코드는 ds,es,fs,gs, ss값을 동일하게 설정한다.
     "movw %%ax %%ds\n\t"\
     "movw %%ax,%%es \n\t"\
     "movw %%ax,%%fs\n\t"\

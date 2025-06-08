@@ -4,6 +4,11 @@
 #include <asm/io.h>
 #include <time.h>
 
+static inline _syscall0(int,fork)
+static inline _syscall0(int,pause)
+static inline _syscall1(int,setup,void *,BIOS)
+static inline _syscall0(int,sync)
+
 #define DRIVE_INFO (*(struct drive_info *)0x90080)
 #define ORIG_ROOT_DEV (*(unsigned short *)0x901FC)
 #define EXE_MEM_K (*(unsigned short *)0x90002)
@@ -13,10 +18,7 @@ long user_stack [4096>>2];
 
 extern void mem_init(long start,long end);
 
-struct{
-    long *a;
-    short b;
-} stack_start = {&user_stack[4096>>2],0x10};
+
 
 extern int vsprintf();
 extern void init(void);
